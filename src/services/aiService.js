@@ -141,7 +141,6 @@ Example:
       }
     ];
   }
-  }
 };
 
 export const generateValuesAnalysis = async (answers, nimKey, language = 'en-US') => {
