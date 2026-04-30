@@ -1,0 +1,157 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { generateValuesAnalysis } from '../services/aiService';
+import { Scale, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
+
+const questions = [
+  {
+    id: 'economy',
+    text: "When it comes to the economy, what is your biggest priority?",
+    options: [
+      "Lower taxes and less government regulation",
+      "Investing in public services and infrastructure",
+      "Reducing the national debt",
+      "Increasing the minimum wage and workers' rights"
+    ]
+  },
+  {
+    id: 'environment',
+    text: "How should the government handle environmental issues?",
+    options: [
+      "Prioritize a rapid transition to renewable energy",
+      "Balance environmental protection with economic growth",
+      "Let the free market innovate green technologies",
+      "Focus primarily on energy independence"
+    ]
+  },
+  {
+    id: 'healthcare',
+    text: "What is your stance on healthcare?",
+    options: [
+      "Transition to a universal, government-funded system",
+      "Expand current public options like Medicare/Medicaid",
+      "Rely on private insurance and free-market competition",
+      "Focus on lowering prescription drug costs only"
+    ]
+  }
+];
+
+const ValuesMatchmaker = () => {
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+
+  const nimKey = import.meta.env.VITE_NVIDIA_NIM_API_KEY || '';
+
+  const handleSelect = async (option) => {
+    const newAnswers = { ...answers, [questions[currentQuestion].id]: option };
+    setAnswers(newAnswers);
+
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(c => c + 1);
+    } else {
+      // Finished
+      setIsAnalyzing(true);
+      if (!nimKey) {
+        setAnalysis("Please configure your NVIDIA NIM API key to generate an analysis.");
+        setIsAnalyzing(false);
+        return;
+      }
+      
+      const result = await generateValuesAnalysis(newAnswers, nimKey, 'en-US'); // Hardcoded to English for now or can grab from global state if lifted
+      setAnalysis(result);
+      setIsAnalyzing(false);
+    }
+  };
+
+  const reset = () => {
+    setCurrentQuestion(0);
+    setAnswers({});
+    setAnalysis(null);
+  };
+
+  return (
+    <section id="matchmaker" style={{ padding: '6rem 2rem', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '3rem', position: 'relative', overflow: 'hidden' }}>
+        <h2 style={{ fontSize: '2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+          <Scale className="text-primary" /> Values Matchmaker
+        </h2>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '3rem' }}>
+          Answer 3 quick questions to see which civic policies align with your values.
+        </p>
+
+        {!isAnalyzing && !analysis && (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentQuestion}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              style={{ textAlign: 'left' }}
+            >
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                Question {currentQuestion + 1} of {questions.length}
+              </div>
+              <h3 style={{ fontSize: '1.4rem', marginBottom: '2rem' }}>
+                {questions[currentQuestion].text}
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {questions[currentQuestion].options.map((option, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSelect(option)}
+                    style={{
+                      padding: '1.25rem',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: '12px',
+                      color: 'var(--text)',
+                      fontSize: '1.1rem',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--glass-border)'}
+                  >
+                    {option}
+                    <ChevronRight size={18} style={{ opacity: 0.5 }} />
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        )}
+
+        {isAnalyzing && (
+          <div style={{ padding: '4rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+            <Loader2 size={40} className="text-primary" style={{ animation: 'spin 1s linear infinite' }} />
+            <p style={{ color: 'var(--text-muted)' }}>Analyzing your policy alignments using AI...</p>
+          </div>
+        )}
+
+        {analysis && (
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: 'left' }}>
+            <div style={{ background: 'rgba(37, 99, 235, 0.1)', padding: '2rem', borderRadius: '12px', border: '1px solid var(--primary)', marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem', color: 'var(--primary)' }}>Your Civic Profile</h3>
+              <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'var(--text)' }}>
+                {analysis}
+              </p>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <button onClick={reset} className="btn-primary" style={{ padding: '1rem 2rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                <RefreshCw size={20} /> Start Over
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </section>
+  );
+};
+
+export default ValuesMatchmaker;
