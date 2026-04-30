@@ -7,15 +7,17 @@ import Quiz from './components/Quiz';
 import Assistant from './components/Assistant';
 
 function App() {
+  const [language, setLanguage] = React.useState('en-US');
+
   return (
     <div className="app-container">
-      <Header />
+      <Header language={language} setLanguage={setLanguage} />
       <main>
-        <Hero />
-        <LiveNews />
-        <ValuesMatchmaker />
-        <Quiz />
-        <Assistant />
+        <Hero language={language} />
+        <LiveNews language={language} />
+        <ValuesMatchmaker language={language} />
+        <Quiz language={language} />
+        <Assistant language={language} setLanguage={setLanguage} />
       </main>
       
       <footer style={{
