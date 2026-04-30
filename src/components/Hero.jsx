@@ -2,7 +2,36 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight, ShieldCheck, Clock, Users } from 'lucide-react';
 
-const Hero = () => {
+const Hero = ({ language }) => {
+  const translations = {
+    'en-US': { 
+      badge: 'Election 2026 Assistant',
+      title: 'Democracy made Simple.',
+      desc: 'Navigate the election process with confidence. Get personalized timelines, step-by-step guides, and instant answers to your voting questions.',
+      start: 'Get Started'
+    },
+    'es-ES': { 
+      badge: 'Asistente Electoral 2026',
+      title: 'Democracia hecha Simple.',
+      desc: 'Navegue por el proceso electoral con confianza. Obtenga cronogramas personalizados, guías paso a paso y respuestas instantáneas a sus preguntas sobre la votación.',
+      start: 'Empezar'
+    },
+    'fr-FR': { 
+      badge: 'Assistant Électoral 2026',
+      title: 'La démocratie simplifiée.',
+      desc: 'Naviguez dans le processus électoral en toute confiance. Obtenez des calendriers personnalisés, des guides étape par étape et des réponses instantanées à vos questions sur le vote.',
+      start: 'Commencer'
+    },
+    'hi-IN': { 
+      badge: 'चुनाव 2026 सहायक',
+      title: 'लोकतंत्र हुआ सरल।',
+      desc: 'आत्मविश्वास के साथ चुनाव प्रक्रिया को नेविगेट करें। व्यक्तिगत समयरेखा, चरण-दर-चरण मार्गदर्शिकाएँ और अपने मतदान संबंधी प्रश्नों के त्वरित उत्तर प्राप्त करें।',
+      start: 'शुरू करें'
+    }
+  };
+
+  const t = translations[language] || translations['en-US'];
+
   return (
     <section style={{
       padding: '4rem 2rem',
@@ -26,14 +55,14 @@ const Hero = () => {
           marginBottom: '1.5rem',
           display: 'inline-block'
         }}>
-          Election 2026 Assistant
+          {t.badge}
         </span>
         <h1 style={{
           fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
           lineHeight: '1.1',
           marginBottom: '1.5rem'
         }}>
-          Democracy made <span className="gradient-text">Simple.</span>
+          {t.title.split(' ').map((word, i) => i === t.title.split(' ').length - 1 ? <span key={i} className="gradient-text">{word}</span> : word + ' ')}
         </h1>
         <p style={{
           fontSize: '1.25rem',
@@ -41,8 +70,7 @@ const Hero = () => {
           maxWidth: '700px',
           margin: '0 auto 2.5rem',
         }}>
-          Navigate the election process with confidence. Get personalized timelines, 
-          step-by-step guides, and instant answers to your voting questions.
+          {t.desc}
         </p>
         
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '4rem' }}>
@@ -51,7 +79,7 @@ const Hero = () => {
             style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}
             onClick={() => document.getElementById('assistant')?.scrollIntoView({ behavior: 'smooth' })}
           >
-            Get Started <ChevronRight size={20} />
+            {t.start} <ChevronRight size={20} />
           </button>
         </div>
       </motion.div>
