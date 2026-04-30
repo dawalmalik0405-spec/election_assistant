@@ -4,7 +4,7 @@ import { MessageSquare, Send, User, Bot, Mic, MicOff, Volume2, VolumeX, Search, 
 import { performWebSearch } from '../services/searchService';
 import { generateRobustAiResponse } from '../services/aiService';
 
-const VoiceAssistant = () => {
+const VoiceAssistant = ({ language, setLanguage }) => {
   const [messages, setMessages] = useState([
     { type: 'bot', text: "Welcome to the Voice-Enabled Civic Assistant. I can search the web for real-time election data. Ask me anything about registration, polling places, or candidates!", sources: [] }
   ]);
@@ -14,7 +14,7 @@ const VoiceAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [mute, setMute] = useState(false);
-  const [language, setLanguage] = useState('en-US');
+  // language prop is now received from App.jsx
   const apiKey = import.meta.env.VITE_TAVILY_API_KEY || '';
   const geminiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
   const nimKey = import.meta.env.VITE_NVIDIA_NIM_API_KEY || '';
@@ -186,16 +186,6 @@ const VoiceAssistant = () => {
             </span>
           </div>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <select 
-              value={language} 
-              onChange={(e) => setLanguage(e.target.value)}
-              style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--glass-border)', borderRadius: '4px', padding: '4px', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
-            >
-              <option value="en-US">English</option>
-              <option value="es-ES">Español</option>
-              <option value="fr-FR">Français</option>
-              <option value="hi-IN">हिंदी</option>
-            </select>
             <button 
               onClick={() => {
                 setMute(!mute);
