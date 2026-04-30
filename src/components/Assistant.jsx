@@ -308,41 +308,6 @@ const VoiceAssistant = ({ language, setLanguage }) => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                transition: 'all 0.3s'
-              }}
-            >
-              {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-            </button>
-            <input 
-              type="text" 
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder={isListening ? "Listening..." : "Ask about deadlines, registration, or polling places..."}
-              style={{
-                flex: 1,
-                background: 'none',
-                border: 'none',
-                color: 'white',
-                padding: '0.5rem',
-                fontSize: '1rem',
-                outline: 'none'
-              }}
-            />
-            <button 
-              onClick={() => handleSend()}
-              disabled={!input.trim() || isSearching}
-              style={{
-                background: 'var(--primary)',
-                border: 'none',
-                color: 'white',
-                width: '44px',
-                height: '44px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
                 opacity: (!input.trim() || isSearching) ? 0.5 : 1
               }}
             >
