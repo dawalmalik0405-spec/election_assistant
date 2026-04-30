@@ -1,7 +1,16 @@
 import React from 'react';
 import { Vote } from 'lucide-react';
 
-const Header = () => {
+const Header = ({ language, setLanguage }) => {
+  const translations = {
+    'en-US': { news: 'News', quiz: 'Quiz', assistant: 'Assistant', check: 'Check Registration' },
+    'es-ES': { news: 'Noticias', quiz: 'Cuestionario', assistant: 'Asistente', check: 'Verificar Registro' },
+    'fr-FR': { news: 'Actualités', quiz: 'Quiz', assistant: 'Assistant', check: 'Vérifier l\'inscription' },
+    'hi-IN': { news: 'समाचार', quiz: 'प्रश्नोत्तरी', assistant: 'सहायक', check: 'पंजीकरण जांचें' }
+  };
+
+  const t = translations[language] || translations['en-US'];
+
   return (
     <header style={{
       padding: '1.5rem 2rem',
@@ -29,14 +38,35 @@ const Header = () => {
       </div>
       
       <nav style={{ display: 'flex', gap: '2rem' }}>
-        <a href="#steps" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontWeight: '500', transition: 'color 0.3s' }} onMouseEnter={(e) => e.target.style.color = 'var(--text)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>Process</a>
-        <a href="#timeline" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontWeight: '500', transition: 'color 0.3s' }} onMouseEnter={(e) => e.target.style.color = 'var(--text)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>Timeline</a>
-        <a href="#assistant" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontWeight: '500', transition: 'color 0.3s' }} onMouseEnter={(e) => e.target.style.color = 'var(--text)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>Assistant</a>
+        <a href="#news" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontWeight: '500', transition: 'color 0.3s' }}>{t.news}</a>
+        <a href="#quiz" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontWeight: '500', transition: 'color 0.3s' }}>{t.quiz}</a>
+        <a href="#assistant" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontWeight: '500', transition: 'color 0.3s' }}>{t.assistant}</a>
       </nav>
 
-      <button className="btn-primary">
-        Check Registration
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <select 
+          value={language} 
+          onChange={(e) => setLanguage(e.target.value)}
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid var(--glass-border)',
+            color: 'var(--text)',
+            padding: '0.5rem',
+            borderRadius: '8px',
+            outline: 'none',
+            cursor: 'pointer',
+            fontSize: '0.9rem'
+          }}
+        >
+          <option value="en-US">English</option>
+          <option value="es-ES">Español</option>
+          <option value="fr-FR">Français</option>
+          <option value="hi-IN">हिन्दी</option>
+        </select>
+        <button className="btn-primary">
+          {t.check}
+        </button>
+      </div>
     </header>
   );
 };
