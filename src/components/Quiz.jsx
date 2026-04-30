@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { generateDynamicQuiz } from '../services/aiService';
 import { Loader2, CheckCircle, XCircle, Award, RefreshCw, Brain } from 'lucide-react';
 
-const Quiz = () => {
+const Quiz = ({ language }) => {
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -11,6 +11,15 @@ const Quiz = () => {
   const [isFinished, setIsFinished] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
+
+  const translations = {
+    'en-US': { title: 'Test Your Civic Knowledge', subtitle: 'Think you know everything about the election process? Take our AI-generated dynamic quiz to find out! Every quiz is uniquely generated.', start: 'Start AI Quiz', loading: 'AI is writing your questions...', q: 'Question', s: 'Score', complete: 'Quiz Complete!', result: 'You scored', again: 'Take Another Quiz' },
+    'es-ES': { title: 'Prueba tus Conocimientos Cívicos', subtitle: '¿Crees que lo sabes todo sobre el proceso electoral? ¡Toma nuestro cuestionario dinámico generado por IA para averiguarlo! Cada cuestionario se genera de forma única.', start: 'Iniciar Cuestionario IA', loading: 'La IA está redactando tus preguntas...', q: 'Pregunta', s: 'Puntuación', complete: '¡Cuestionario Completado!', result: 'Puntuaste', again: 'Tomar Otro Cuestionario' },
+    'fr-FR': { title: 'Testez vos Connaissances Civiques', subtitle: 'Vous pensez tout savoir sur le processus électoral ? Faites notre quiz dynamique généré par l\'IA pour le découvrir ! Chaque quiz est généré de manière unique.', start: 'Lancer le Quiz IA', loading: 'L\'IA rédige vos questions...', q: 'Question', s: 'Score', complete: 'Quiz Terminé !', result: 'Vous avez marqué', again: 'Faire un Autre Quiz' },
+    'hi-IN': { title: 'अपने नागरिक ज्ञान का परीक्षण करें', subtitle: 'क्या आपको लगता है कि आप चुनाव प्रक्रिया के बारे में सब कुछ जानते हैं? पता लगाने के लिए हमारी एआई-जनित गतिशील प्रश्नोत्तरी लें! प्रत्येक प्रश्नोत्तरी विशिष्ट रूप से उत्पन्न होती है।', start: 'एआई प्रश्नोत्तरी शुरू करें', loading: 'एआई आपके प्रश्न लिख रहा है...', q: 'प्रश्न', s: 'स्कोर', complete: 'प्रश्नोत्तरी पूरी हुई!', result: 'आपने स्कोर किया', again: 'एक और प्रश्नोत्तरी लें' }
+  };
+
+  const t = translations[language] || translations['en-US'];
 
   const nimKey = import.meta.env.VITE_NVIDIA_NIM_API_KEY || '';
 
@@ -29,7 +38,7 @@ const Quiz = () => {
     setIsAnswerRevealed(false);
 
     try {
-      const generatedQuestions = await generateDynamicQuiz(nimKey, 'en-US');
+      const generatedQuestions = await generateDynamicQuiz(nimKey, language);
       setQuestions(generatedQuestions);
     } catch (err) {
       console.error(err);
@@ -60,16 +69,16 @@ const Quiz = () => {
     <section id="quiz" style={{ padding: '6rem 2rem', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
       <div className="glass-card" style={{ padding: '3rem', position: 'relative', overflow: 'hidden' }}>
         <h2 style={{ fontSize: '2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-          <Brain className="text-primary" /> Test Your Civic Knowledge
+          <Brain className="text-primary" /> {t.title}
         </h2>
         
         {questions.length === 0 && !isLoading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-              Think you know everything about the election process? Take our AI-generated dynamic quiz to find out! Every quiz is uniquely generated.
+              {t.subtitle}
             </p>
             <button onClick={startQuiz} className="btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
-              Start AI Quiz
+              {t.start}
             </button>
           </motion.div>
         )}
@@ -77,7 +86,7 @@ const Quiz = () => {
         {isLoading && (
           <div style={{ padding: '4rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
             <Loader2 size={40} className="text-primary" style={{ animation: 'spin 1s linear infinite' }} />
-            <p style={{ color: 'var(--text-muted)' }}>AI is writing your questions...</p>
+            <p style={{ color: 'var(--text-muted)' }}>{t.loading}</p>
           </div>
         )}
 
@@ -91,8 +100,8 @@ const Quiz = () => {
               style={{ textAlign: 'left' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                <span>Question {currentIndex + 1} of {questions.length}</span>
-                <span>Score: {score}</span>
+                <span>{t.q} {currentIndex + 1} of {questions.length}</span>
+                <span>{t.s}: {score}</span>
               </div>
               
               <h3 style={{ fontSize: '1.5rem', marginBottom: '2rem', lineHeight: '1.4' }}>
@@ -155,12 +164,12 @@ const Quiz = () => {
         {isFinished && (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
             <Award size={64} className="text-primary" style={{ margin: '0 auto 1.5rem' }} />
-            <h3 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Quiz Complete!</h3>
+            <h3 style={{ fontSize: '2rem', marginBottom: '1rem' }}>{t.complete}</h3>
             <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>
-              You scored {score} out of {questions.length}.
+              {t.result} {score} out of {questions.length}.
             </p>
             <button onClick={startQuiz} className="btn-primary" style={{ padding: '1rem 2rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-              <RefreshCw size={20} /> Take Another Quiz
+              <RefreshCw size={20} /> {t.again}
             </button>
           </motion.div>
         )}
