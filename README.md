@@ -7,6 +7,8 @@
 ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
+### 🚀 [Live Demo: CivicPath Command Center](https://election-assistant-161727220049.us-central1.run.app)
+
 ---
 
 ## 🌟 Key Features

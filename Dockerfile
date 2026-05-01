@@ -1,26 +1,24 @@
-# Stage 1: Build the React application
-FROM node:18-alpine AS build
-WORKDIR /app
-
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install
-
-# Copy the rest of the application code and build
-COPY . .
-RUN npm run build
-
-# Stage 2: Serve the built application using Nginx
+# Use a lightweight Nginx image
 FROM nginx:alpine
 
-# Copy the build output from the previous stage
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy the pre-built dist folder to the Nginx directory
+COPY dist /usr/share/nginx/html
 
-# Expose port 8080 (Cloud Run default)
+# Expose port 8080
 EXPOSE 8080
 
-# Configure Nginx to listen on 8080
+# Configure Nginx for Cloud Run and SPA routing
 RUN sed -i 's/listen\(.*\)80;/listen 8080;/' /etc/nginx/conf.d/default.conf
 
-# Start Nginx
+# Add a basic Nginx configuration for SPA routing if needed
+# (Optional: If the app uses client-side routing, we need to redirect 404s to index.html)
+RUN echo 'server { \
+    listen 8080; \
+    location / { \
+        root /usr/share/nginx/html; \
+        index index.html index.htm; \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
+
 CMD ["nginx", "-g", "daemon off;"]
