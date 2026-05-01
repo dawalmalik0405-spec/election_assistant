@@ -59,6 +59,11 @@ const VoiceAssistant = ({ language, setLanguage }) => {
     if (recognitionRef.current) {
       recognitionRef.current.lang = language;
     }
+    
+    return () => {
+      window.speechSynthesis.cancel();
+      if (recognitionRef.current) recognitionRef.current.stop();
+    };
   }, [language]);
 
   const scrollToBottom = () => {
@@ -102,25 +107,29 @@ const VoiceAssistant = ({ language, setLanguage }) => {
     abortControllerRef.current = new AbortController();
     
     try {
-      // Real search using Tavily
+      // Real search using Tavily (with AI backup inside the service)
       let searchData;
       try {
         searchData = await performWebSearch(query, apiKey);
       } catch (searchErr) {
-        if (searchErr.name === 'AbortError') return;
-        throw new Error(`Search Tool Error: ${searchErr.message}`);
+        console.warn("Search Tool failed completely. Falling back to AI internal knowledge.");
+        // If search fails, we don't throw! We just provide empty results.
+        searchData = { answer: null, results: [] };
       }
       
       setIsSearching(false);
       setIsTyping(true);
       
       // Prepare context for AI model
-      const context = searchData.results.map(r => `Source: ${r.title}\nContent: ${r.content}`).join('\n\n');
-      const aiPrompt = `User Query: ${query}\n\nSearch Context:\n${context}\n\nProvide a comprehensive, accurate, and concise answer based ONLY on the search context provided above.`;
+      const context = (searchData.results || []).length > 0 
+        ? searchData.results.map(r => `Source: ${r.title}\nContent: ${r.content}`).join('\n\n')
+        : "No real-time search data available. Answer based on your internal training data about civic duties and election processes.";
+      
+      const aiPrompt = `User Query: ${query}\n\nSearch Context:\n${context}\n\nProvide a comprehensive and helpful answer. If search context is provided, prioritize it. If not, use your internal knowledge to assist the user.`;
       
       let aiResponseText;
       try {
-        // Automatic robust selection
+        // Automatic robust selection (NIM is preferred as per user request)
         let rawAiResponseText = await generateRobustAiResponse(aiPrompt, 'nim', geminiKey, nimKey, language);
         
         // Final check if aborted during AI generation
@@ -135,19 +144,20 @@ const VoiceAssistant = ({ language, setLanguage }) => {
       const newMessage = { 
         type: 'bot', 
         text: aiResponseText, 
-        sources: searchData.results.map(r => r.url.replace('https://', '').split('/')[0]) 
+        sources: (searchData.results || []).map(r => r.url.replace('https://', '').split('/')[0]) 
       };
       setMessages(prev => [...prev, newMessage]);
       setIsTyping(false);
       speak(aiResponseText);
     } catch (err) {
       if (err.name === 'AbortError') return;
-      setError(err.message);
+      const displayError = typeof err === 'string' ? err : (err.message || JSON.stringify(err));
+      setError(displayError);
       setIsSearching(false);
       setIsTyping(false);
       setMessages(prev => [...prev, { 
         type: 'bot', 
-        text: `⚠️ ${err.message}`, 
+        text: `⚠️ Search Tool Error: ${displayError}`, 
         sources: [] 
       }]);
     } finally {

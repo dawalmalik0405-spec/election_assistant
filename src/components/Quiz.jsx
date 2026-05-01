@@ -23,9 +23,35 @@ const Quiz = ({ language }) => {
   const geminiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
   const t = translations[language] || translations['en-US'];
 
+  useEffect(() => {
+    const checkCacheAndPreFetch = async () => {
+      // 1. Check if global background fetch already finished
+      const cached = localStorage.getItem(`civicpath_quiz_${language}`);
+      if (cached) {
+        try {
+          const { data } = JSON.parse(cached);
+          if (data && data.length > 0) {
+            setQuestions(data);
+            return;
+          }
+        } catch (e) { console.error("Cache parse error", e); }
+      }
+
+      // 2. If no cache, perform local pre-fetch
+      try {
+        const generatedQuestions = await generateDynamicQuiz(geminiKey, nimKey, language);
+        setQuestions(generatedQuestions);
+      } catch (err) {
+        console.warn("Background pre-fetch failed", err);
+      }
+    };
+    checkCacheAndPreFetch();
+  }, [language]);
+
   const startQuiz = async () => {
+    // If we have questions (from cache or pre-fetch), start immediately
     if (questions.length > 0 && !isFinished) {
-      return; // Already pre-fetching
+      return; 
     }
 
     setIsLoading(true);
@@ -39,24 +65,17 @@ const Quiz = ({ language }) => {
     try {
       const generatedQuestions = await generateDynamicQuiz(geminiKey, nimKey, language);
       setQuestions(generatedQuestions);
+      // Update cache for next time
+      localStorage.setItem(`civicpath_quiz_${language}`, JSON.stringify({
+        data: generatedQuestions,
+        timestamp: Date.now()
+      }));
     } catch (err) {
       console.error(err);
       alert("AI Service currently busy. Please try again in a moment.");
     }
     setIsLoading(false);
   };
-
-  useEffect(() => {
-    const preFetch = async () => {
-      try {
-        const generatedQuestions = await generateDynamicQuiz(geminiKey, nimKey, language);
-        setQuestions(generatedQuestions);
-      } catch (err) {
-        console.warn("Background pre-fetch failed", err);
-      }
-    };
-    if (questions.length === 0) preFetch();
-  }, [language]);
 
   const handleAnswer = (option) => {
     if (isAnswerRevealed) return;
@@ -81,8 +100,7 @@ const Quiz = ({ language }) => {
     <motion.section 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="main-content"
-      style={{ padding: '6rem 2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}
+      style={{ padding: '3rem 2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}
     >
       <div className="glass-card" style={{ padding: '4rem', maxWidth: '800px', width: '100%', position: 'relative', overflow: 'hidden' }}>
         {/* Progress Bar */}

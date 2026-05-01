@@ -32,7 +32,7 @@ export const generateNimResponse = async (prompt, apiKey, language = 'en-US') =>
 
 export const generateGeminiResponse = async (prompt, apiKey, language = 'en-US') => {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: "v1" });
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" }, { apiVersion: "v1" });
   
   const langNames = { 'en-US': 'English', 'es-ES': 'Spanish', 'fr-FR': 'French', 'hi-IN': 'Hindi' };
   const targetLang = langNames[language] || 'English';
@@ -110,7 +110,7 @@ Example:
   try {
     // Attempt with Gemini first for complex JSON
     const genAI = new GoogleGenerativeAI(geminiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
     const result = await model.generateContent(prompt);
     const response = await result.response;

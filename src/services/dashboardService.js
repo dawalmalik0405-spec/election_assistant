@@ -40,7 +40,7 @@ export const fetchElectionTimeline = async (apiKey) => {
 
   // Filter and shuffle results to make it feel "Live" and varied
   const shuffledResults = results
-    .filter(res => !res.title.includes('[PDF]') && !res.url.endsWith('.pdf'))
+    .filter(res => !res.title.match(/\[pdf\]/gi) && !res.url.toLowerCase().endsWith('.pdf'))
     .sort(() => 0.5 - Math.random()); // Shuffling the pool
 
     const timeline = shuffledResults.slice(0, 6).map(res => {
@@ -112,9 +112,10 @@ export const fetchLiveHeadlines = async (apiKey) => {
   
   console.log('🔄 Dashboard: Fetching live election news...');
   const query = 'latest global election news India 2026';
+  
   const { results } = await performWebSearch(query, apiKey);
   
-  return results.map(res => ({
+  return (results || []).map(res => ({
     title: res.title.split('|')[0].trim(),
     url: res.url,
     content: res.content

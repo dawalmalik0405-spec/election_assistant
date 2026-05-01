@@ -63,14 +63,21 @@ const ValuesMatchmaker = ({ language }) => {
     } else {
       // Finished
       setIsAnalyzing(true);
-      if (!nimKey) {
-        setAnalysis("Please configure your NVIDIA NIM API key to generate an analysis.");
-        setIsAnalyzing(false);
-        return;
-      }
+      const geminiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
       
-      const result = await generateValuesAnalysis(newAnswers, nimKey, language);
-      setAnalysis(result);
+      try {
+        const result = await generateRobustAiResponse(
+          `Based on these user values, provide a brief, objective summary of policy alignment: ${JSON.stringify(newAnswers)}`,
+          'nim',
+          geminiKey,
+          nimKey,
+          language
+        );
+        setAnalysis(result);
+      } catch (err) {
+        console.error(err);
+        setAnalysis("The AI analysis service is temporarily unavailable. Please try again later.");
+      }
       setIsAnalyzing(false);
     }
   };

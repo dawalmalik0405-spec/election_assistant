@@ -15,6 +15,30 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // Global Background Pre-fetch for Quiz to eliminate load times
+  React.useEffect(() => {
+    const preFetchQuiz = async () => {
+      const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      const nimKey = import.meta.env.VITE_NVIDIA_NIM_API_KEY;
+      const cached = localStorage.getItem(`civicpath_quiz_${language}`);
+      
+      // Only fetch if not cached or cache is old
+      if (!cached) {
+        try {
+          const { generateDynamicQuiz } = await import('./services/aiService');
+          const questions = await generateDynamicQuiz(geminiKey, nimKey, language);
+          localStorage.setItem(`civicpath_quiz_${language}`, JSON.stringify({
+            data: questions,
+            timestamp: Date.now()
+          }));
+        } catch (err) {
+          console.warn("Global pre-fetch failed", err);
+        }
+      }
+    };
+    preFetchQuiz();
+  }, [language]);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };

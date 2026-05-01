@@ -78,25 +78,39 @@ const Hero = ({ language, theme }) => {
   ];
 
   React.useEffect(() => {
+    let isMounted = true;
     const getData = async () => {
+      const apiKey = import.meta.env.VITE_TAVILY_API_KEY;
       try {
-        const apiKey = import.meta.env.VITE_TAVILY_API_KEY;
-        const [statsData, timelineData, headlinesData] = await Promise.all([
-          fetchDashboardStats(apiKey),
-          fetchElectionTimeline(apiKey),
-          fetchLiveHeadlines(apiKey)
-        ]);
-        setStats(statsData);
-        setTimeline(timelineData);
-        setHeadlines(headlinesData);
-        setLastUpdated(new Date().toLocaleTimeString());
+        // Fetch stats
+        try {
+          const statsData = await fetchDashboardStats(apiKey);
+          if (isMounted) setStats(statsData);
+        } catch (e) { console.warn("Stats fetch failed"); }
+
+        // Fetch timeline
+        try {
+          const timelineData = await fetchElectionTimeline(apiKey);
+          if (isMounted) setTimeline(timelineData);
+        } catch (e) { 
+          console.warn("Timeline fetch failed");
+        }
+
+        // Fetch headlines
+        try {
+          const headlinesData = await fetchLiveHeadlines(apiKey);
+          if (isMounted) setHeadlines(headlinesData);
+        } catch (e) { console.warn("Headlines fetch failed"); }
+
+        if (isMounted) setLastUpdated(new Date().toLocaleTimeString());
       } catch (err) {
-        console.error('Failed to fetch data:', err);
+        console.error('Critical fetch error:', err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     getData();
+    return () => { isMounted = false; };
   }, []);
 
   return (
@@ -104,7 +118,7 @@ const Hero = ({ language, theme }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
-      className="main-content"
+      style={{ padding: '1.5rem' }}
     >
       {/* Header Section */}
       <div style={{ padding: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '2rem', flexWrap: 'wrap' }}>
@@ -118,7 +132,7 @@ const Hero = ({ language, theme }) => {
             <span style={{ fontSize: '0.8rem', fontWeight: '700', letterSpacing: '0.1em' }}>{t.live}</span>
           </div>
           <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
-            {t.greeting}, <span className="gradient-text">Citizen</span>
+            {t.greeting}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>{t.subtitle}</p>
         </motion.div>
@@ -142,7 +156,7 @@ const Hero = ({ language, theme }) => {
       </div>
 
       {/* Stats Grid */}
-      <div style={{ padding: '0 2.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+      <div style={{ padding: '0 1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
         {[
           { icon: <Globe2 />, label: t.stats.active, value: stats.activeElections, color: '#3b82f6' },
           { icon: <Users />, label: t.stats.voters, value: stats.registeredVoters, color: '#10b981' },
@@ -168,7 +182,7 @@ const Hero = ({ language, theme }) => {
       </div>
 
       {/* Main Content Sections */}
-      <div style={{ padding: '0 2.5rem', display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2.5rem', flexWrap: 'wrap' }}>
+      <div style={{ padding: '0 1.5rem', display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>
         {/* News Ticker Card */}
         <motion.div 
           initial={{ y: 20, opacity: 0 }}

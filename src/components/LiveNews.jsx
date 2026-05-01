@@ -21,6 +21,7 @@ const LiveNews = ({ language }) => {
   const apiKey = import.meta.env.VITE_TAVILY_API_KEY || '';
 
   useEffect(() => {
+    let isMounted = true;
     const fetchNews = async () => {
       if (!apiKey) {
         setError("Tavily API key is missing. Cannot fetch live news.");
@@ -34,16 +35,22 @@ const LiveNews = ({ language }) => {
           : "latest global election news, India election updates 2026, and international civic duties";
         const searchData = await performWebSearch(query, apiKey);
         
-        setNews(searchData.results);
-        setCachedData(`news_${language}`, searchData.results);
+        if (isMounted) {
+          setNews(searchData.results);
+          setCachedData(`news_${language}`, searchData.results);
+        }
       } catch (err) {
-        if (news.length === 0) setError(err.message);
+        if (isMounted && news.length === 0) setError(err.message);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     
     fetchNews();
+    return () => {
+      isMounted = false;
+      window.speechSynthesis.cancel();
+    };
   }, [apiKey, language]);
 
   const handleSpeak = (e, item, idx) => {
@@ -68,8 +75,7 @@ const LiveNews = ({ language }) => {
     <motion.section 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="main-content"
-      style={{ padding: '3rem' }}
+      style={{ padding: '2rem' }}
     >
       <header style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <div style={{ background: 'var(--primary)', padding: '0.75rem', borderRadius: '16px', boxShadow: '0 8px 16px rgba(59, 130, 246, 0.3)' }}>
