@@ -22,6 +22,17 @@ const VoiceAssistant = ({ language, setLanguage }) => {
   
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
+  const abortControllerRef = useRef(null);
+
+  const stopAi = () => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setIsSearching(false);
+    setIsTyping(false);
+  };
 
   // Initialize Speech Recognition
   useEffect(() => {
@@ -87,12 +98,16 @@ const VoiceAssistant = ({ language, setLanguage }) => {
     setIsSearching(true);
     setError(null);
     
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+    
     try {
       // Real search using Tavily
       let searchData;
       try {
         searchData = await performWebSearch(query, apiKey);
       } catch (searchErr) {
+        if (searchErr.name === 'AbortError') return;
         throw new Error(`Search Tool Error: ${searchErr.message}`);
       }
       
@@ -105,12 +120,15 @@ const VoiceAssistant = ({ language, setLanguage }) => {
       
       let aiResponseText;
       try {
-        // Automatic robust selection: NIM is much faster right now since Gemini is out of quota
+        // Automatic robust selection
         let rawAiResponseText = await generateRobustAiResponse(aiPrompt, 'nim', geminiKey, nimKey, language);
         
-        // Forcefully strip out any markdown characters (*, #, _) that the AI might sneak in
+        // Final check if aborted during AI generation
+        if (abortControllerRef.current.signal.aborted) return;
+
         aiResponseText = rawAiResponseText.replace(/[*#_`~]/g, '').trim();
       } catch (aiErr) {
+        if (aiErr.name === 'AbortError') return;
         throw new Error(`AI Model Error: ${aiErr.message}`);
       }
 
@@ -123,6 +141,7 @@ const VoiceAssistant = ({ language, setLanguage }) => {
       setIsTyping(false);
       speak(aiResponseText);
     } catch (err) {
+      if (err.name === 'AbortError') return;
       setError(err.message);
       setIsSearching(false);
       setIsTyping(false);
@@ -131,6 +150,8 @@ const VoiceAssistant = ({ language, setLanguage }) => {
         text: `⚠️ ${err.message}`, 
         sources: [] 
       }]);
+    } finally {
+      abortControllerRef.current = null;
     }
   };
 
@@ -154,127 +175,140 @@ const VoiceAssistant = ({ language, setLanguage }) => {
 
   return (
     <section id="assistant" style={{
-      padding: '6rem 2rem',
-      maxWidth: '1000px',
-      margin: '0 auto'
+      padding: '4rem 2rem',
+      maxWidth: '900px',
+      margin: '0 auto',
+      minHeight: '100vh'
     }}>
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Smart <span className="gradient-text">Voice Assistant</span></h2>
-        <p style={{ color: 'var(--text-muted)' }}>AI-powered search with voice interaction and real-time web data.</p>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+          <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
+            {language === 'es-ES' ? 'Asistente de Voz' : language === 'fr-FR' ? 'Assistant Vocal' : language === 'hi-IN' ? 'आवाज सहायक' : 'Smart Voice Assistant'}
+          </h2>
+          <p style={{ color: 'var(--text-muted)' }}>
+            {language === 'es-ES' ? 'Búsqueda con IA y datos web en tiempo real.' : language === 'fr-FR' ? 'Recherche IA et données Web en temps réel.' : language === 'hi-IN' ? 'एआई-संचालित खोज और वास्तविक समय वेब डेटा।' : 'AI-powered search with voice interaction and real-time web data.'}
+          </p>
+        </motion.div>
       </div>
 
       <div className="glass-card" style={{
-        height: '700px',
-        display: 'grid',
-        gridTemplateRows: 'auto 1fr auto',
+        height: '650px',
+        display: 'flex',
+        flexDirection: 'column',
         overflow: 'hidden',
-        position: 'relative'
+        background: 'var(--glass-bg)',
+        border: '1px solid var(--glass-border)'
       }}>
-        {/* Header/Toolbar */}
+        {/* Header/Status */}
         <div style={{
-          padding: '1rem 2rem',
+          padding: '1rem 1.5rem',
           borderBottom: '1px solid var(--glass-border)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: 'rgba(255,255,255,0.02)'
+          background: 'var(--bg-secondary)',
+          opacity: 0.9
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: isSearching ? 'var(--accent)' : 'var(--success)' }} />
-            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>
-              {isSearching ? 'SEARCHING WEB...' : 'ONLINE'}
+            <div style={{ 
+              width: '8px', 
+              height: '8px', 
+              borderRadius: '50%', 
+              background: isSearching ? 'var(--accent)' : '#10b981',
+              boxShadow: isSearching ? '0 0 10px var(--accent)' : '0 0 10px #10b981'
+            }} />
+            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+              {isSearching ? 'SEARCHING...' : 'AI ONLINE'}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <button 
-              onClick={() => {
-                setMute(!mute);
-                if (!mute) window.speechSynthesis.cancel();
-              }}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-            >
-              {mute ? <VolumeX size={20} /> : <Volume2 size={20} />}
-            </button>
-          </div>
+          <button 
+            onClick={() => {
+              setMute(!mute);
+              if (!mute) window.speechSynthesis.cancel();
+            }}
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem' }}
+          >
+            {mute ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </button>
         </div>
 
-        {/* Chat Area */}
+        {/* Messages */}
         <div style={{
-          padding: '2rem',
+          flex: 1,
           overflowY: 'auto',
+          padding: '1.5rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.5rem'
+          gap: '1.25rem'
         }}>
-          {messages.map((msg, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                display: 'flex',
-                gap: '1rem',
-                flexDirection: msg.type === 'user' ? 'row-reverse' : 'row',
-                alignItems: 'flex-start'
-              }}
-            >
-              <div style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                background: msg.type === 'bot' ? 'var(--primary)' : 'var(--surface-light)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                {msg.type === 'bot' ? <Bot size={20} /> : <User size={20} />}
-              </div>
-              <div style={{ maxWidth: '80%' }}>
+          <AnimatePresence initial={false}>
+            {messages.map((msg, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                style={{
+                  alignSelf: msg.type === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '85%',
+                  display: 'flex',
+                  gap: '0.75rem',
+                  flexDirection: msg.type === 'user' ? 'row-reverse' : 'row'
+                }}
+              >
                 <div style={{
-                  background: msg.type === 'bot' ? 'var(--surface-light)' : 'var(--primary)',
-                  padding: '1rem 1.25rem',
-                  borderRadius: msg.type === 'bot' ? '0 18px 18px 18px' : '18px 0 18px 18px',
-                  fontSize: '0.95rem',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '10px',
+                  background: msg.type === 'user' ? 'var(--primary)' : 'var(--bg-secondary)',
+                  border: '1px solid var(--glass-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: '4px',
+                  color: msg.type === 'user' ? 'white' : 'var(--text-primary)'
                 }}>
-                  {msg.text}
+                  {msg.type === 'user' ? <User size={16} /> : <Bot size={16} />}
                 </div>
-                {msg.sources && msg.sources.length > 0 && (
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                    {msg.sources.map((s, i) => (
-                      <span key={i} style={{ fontSize: '0.7rem', color: 'var(--primary)', background: 'rgba(37, 99, 235, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(37, 99, 235, 0.2)' }}>
-                        <Globe size={10} style={{ marginRight: '4px' }} /> {s}
-                      </span>
-                    ))}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: msg.type === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{
+                    background: msg.type === 'user' ? 'var(--primary)' : 'var(--bg-secondary)',
+                    padding: '0.85rem 1.1rem',
+                    borderRadius: msg.type === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                    fontSize: '0.95rem',
+                    lineHeight: '1.5',
+                    border: '1px solid var(--glass-border)',
+                    color: msg.type === 'user' ? 'white' : 'var(--text-primary)',
+                    boxShadow: 'var(--card-shadow)'
+                  }}>
+                    {msg.text}
                   </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
-          
+                  {msg.sources && msg.sources.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                      {msg.sources.map((s, i) => (
+                        <span key={i} style={{ fontSize: '0.7rem', color: 'var(--primary)', background: 'rgba(59, 130, 246, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
           {isSearching && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Search size={20} />
-              </div>
-              <div style={{ background: 'var(--surface-light)', padding: '1rem', borderRadius: '0 18px 18px 18px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Loader2 size={18} className="animate-spin" />
-                <span style={{ fontSize: '0.9rem', color: 'var(--accent)' }}>Scanning official election databases...</span>
-              </div>
-            </motion.div>
+            <div style={{ display: 'flex', gap: '0.75rem', color: 'var(--primary)', alignItems: 'center', padding: '0.5rem' }}>
+              <Loader2 size={16} className="animate-spin" />
+              <span style={{ fontSize: '0.85rem' }}>{language === 'hi-IN' ? 'खोज रहे हैं...' : 'Searching...'}</span>
+            </div>
           )}
 
           {isTyping && (
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Bot size={20} />
-              </div>
-              <div className="typing-indicator" style={{ background: 'var(--surface-light)', padding: '1rem', borderRadius: '0 18px 18px 18px', display: 'flex', gap: '4px' }}>
-                <span className="dot"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
-              </div>
+            <div style={{ display: 'flex', gap: '4px', padding: '0.5rem' }}>
+              {[0, 1, 2].map(i => (
+                <motion.div key={i} animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }} style={{ width: '6px', height: '6px', background: 'var(--primary)', borderRadius: '50%' }} />
+              ))}
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -282,59 +316,104 @@ const VoiceAssistant = ({ language, setLanguage }) => {
 
         {/* Input Area */}
         <div style={{
-          padding: '2rem',
-          borderTop: '1px solid var(--glass-border)',
-          background: 'rgba(0,0,0,0.1)'
+          padding: '1.5rem',
+          background: 'var(--bg-secondary)',
+          borderTop: '1px solid var(--glass-border)'
         }}>
-          <div style={{
-            display: 'flex',
-            gap: '1rem',
-            background: 'var(--surface)',
-            padding: '0.5rem',
-            borderRadius: '16px',
-            border: '1px solid var(--glass-border)',
-            alignItems: 'center'
-          }}>
-            <button 
-              onClick={toggleListening}
-              style={{
-                background: isListening ? 'var(--error)' : 'var(--glass)',
-                border: 'none',
-                color: 'white',
-                width: '44px',
-                height: '44px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                opacity: (!input.trim() || isSearching) ? 0.5 : 1
-              }}
-            >
-              <Send size={20} />
-            </button>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {(isSearching || isTyping || isSpeaking) ? (
+              <button
+                onClick={stopAi}
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  background: '#ef4444',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  boxShadow: '0 0 15px rgba(239, 68, 68, 0.4)'
+                }}
+              >
+                <X size={20} />
+              </button>
+            ) : (
+              <button
+                onClick={toggleListening}
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  background: isListening ? '#ef4444' : 'var(--glass-bg)',
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  border: '1px solid var(--glass-border)',
+                  boxShadow: isListening ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none'
+                }}
+              >
+                {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+              </button>
+            )}
+            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                placeholder={language === 'hi-IN' ? 'सवाल पूछें...' : 'Ask about global elections...'}
+                style={{
+                  width: '100%',
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--glass-border)',
+                  borderRadius: '14px',
+                  padding: '0.85rem 3.5rem 0.85rem 1.25rem',
+                  color: 'var(--text-primary)',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'border-color 0.3s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--glass-border)'}
+              />
+              <button
+                onClick={() => handleSend()}
+                disabled={!input.trim()}
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  background: 'var(--primary)',
+                  border: 'none',
+                  color: 'white',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  opacity: input.trim() ? 1 : 0.5,
+                  transition: 'all 0.2s'
+                }}
+              >
+                <Send size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
-
+      
       <style dangerouslySetInnerHTML={{ __html: `
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        
-        .typing-indicator .dot {
-          width: 8px;
-          height: 8px;
-          background: var(--text-muted);
-          border-radius: 50%;
-          animation: bounce 1.4s infinite ease-in-out both;
-        }
-        .typing-indicator .dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-indicator .dot:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes bounce {
-          0%, 80%, 100% { transform: scale(0); }
-          40% { transform: scale(1.0); }
-        }
       `}} />
     </section>
   );

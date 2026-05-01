@@ -85,11 +85,11 @@ export const generateRobustAiResponse = async (prompt, preferredModel, geminiKey
   }
 };
 
-export const generateDynamicQuiz = async (nimKey, language = 'en-US') => {
+export const generateDynamicQuiz = async (geminiKey, nimKey, language = 'en-US') => {
   const langNames = { 'en-US': 'English', 'es-ES': 'Spanish', 'fr-FR': 'French', 'hi-IN': 'Hindi' };
   const targetLang = langNames[language] || 'English';
 
-  const prompt = `Generate a 3-question multiple choice quiz about the US Election process, voting rights, and civic duties.
+  const prompt = `Generate a 5-question multiple choice quiz about Global and Indian Election processes, voting rights, and civic duties.
 IMPORTANT: You MUST write the questions and answers in ${targetLang}.
 You MUST return ONLY a valid JSON array of objects. Do not use markdown blocks like \`\`\`json. 
 Each object must have exactly these keys:
@@ -100,46 +100,55 @@ Each object must have exactly these keys:
 Example:
 [
   {
-    "question": "What is the minimum voting age in the US?",
-    "options": ["16", "18", "21", "25"],
-    "correctAnswer": "18"
+    "question": "Which body conducts elections in India?",
+    "options": ["Supreme Court", "Election Commission", "Parliament", "NITI Aayog"],
+    "correctAnswer": "Election Commission"
   }
 ]
 `;
 
-  const openai = new OpenAI({
-    apiKey: nimKey,
-    baseURL: `${window.location.origin}/nim-api/v1`,
-    dangerouslyAllowBrowser: true
-  });
-
   try {
-    const completion = await openai.chat.completions.create({
-      model: "minimaxai/minimax-m2.7",
-      messages: [
-        { role: 'system', content: 'You are a strict JSON API. Output ONLY a valid JSON array. Nothing else.' },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 1024,
-    });
+    // Attempt with Gemini first for complex JSON
+    const genAI = new GoogleGenerativeAI(geminiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     
-    const msg = completion.choices[0]?.message;
-    let content = msg?.content || msg?.reasoning_content || "[]";
-    
-    // Clean up any potential markdown the AI might have still added
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let content = response.text();
     content = content.replace(/```json/gi, '').replace(/```/g, '').trim();
     return JSON.parse(content);
-  } catch (error) {
-    console.error("Quiz generation failed", error);
-    // Fallback if AI fails completely
-    return [
-      {
-        question: "What is the minimum voting age in the United States?",
-        options: ["16", "18", "21", "25"],
-        correctAnswer: "18"
-      }
-    ];
+  } catch (err) {
+    console.warn("Gemini Quiz generation failed, trying NIM:", err);
+    
+    const openai = new OpenAI({
+      apiKey: nimKey,
+      baseURL: `${window.location.origin}/nim-api/v1`,
+      dangerouslyAllowBrowser: true
+    });
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "minimaxai/minimax-m2.7",
+        messages: [
+          { role: 'system', content: 'You are a strict JSON API. Output ONLY a valid JSON array. Nothing else.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.5,
+      });
+      
+      let content = completion.choices[0]?.message?.content || "[]";
+      content = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+      return JSON.parse(content);
+    } catch (fallbackErr) {
+      console.error("Both Quiz generators failed", fallbackErr);
+      return [
+        {
+          question: "Which body conducts elections in India?",
+          options: ["Supreme Court", "Election Commission", "Parliament", "NITI Aayog"],
+          correctAnswer: "Election Commission"
+        }
+      ];
+    }
   }
 };
 

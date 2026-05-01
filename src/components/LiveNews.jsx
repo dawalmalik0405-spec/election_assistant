@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { performWebSearch } from '../services/searchService';
 import { Newspaper, ExternalLink, Loader2, Volume2, VolumeX } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { getCachedData, setCachedData } from '../services/dashboardService';
 
 const LiveNews = ({ language }) => {
-  const [news, setNews] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [news, setNews] = useState(getCachedData(`news_${language}`) || []);
+  const [loading, setLoading] = useState(!getCachedData(`news_${language}`));
   const [error, setError] = useState(null);
   const [speakingItem, setSpeakingItem] = useState(null);
 
@@ -17,7 +18,6 @@ const LiveNews = ({ language }) => {
   };
 
   const t = translations[language] || translations['en-US'];
-  
   const apiKey = import.meta.env.VITE_TAVILY_API_KEY || '';
 
   useEffect(() => {
@@ -29,21 +29,25 @@ const LiveNews = ({ language }) => {
       }
       
       try {
-        const searchData = await performWebSearch("latest news about US elections, voting, and civic duties", apiKey);
-        // Show all retrieved articles (default 5 from searchService)
+        const query = language === 'hi-IN' 
+          ? "भारत चुनाव समाचार 2026, latest global election news, and voting updates"
+          : "latest global election news, India election updates 2026, and international civic duties";
+        const searchData = await performWebSearch(query, apiKey);
+        
         setNews(searchData.results);
+        setCachedData(`news_${language}`, searchData.results);
       } catch (err) {
-        setError(err.message);
+        if (news.length === 0) setError(err.message);
       } finally {
         setLoading(false);
       }
     };
     
     fetchNews();
-  }, [apiKey]);
+  }, [apiKey, language]);
 
   const handleSpeak = (e, item, idx) => {
-    e.preventDefault(); // Don't open the article link
+    e.preventDefault();
     e.stopPropagation();
     
     if (speakingItem === idx) {
@@ -61,26 +65,37 @@ const LiveNews = ({ language }) => {
   };
 
   return (
-    <section id="news" style={{ padding: '4rem 2rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-        <Newspaper className="text-primary" size={28} />
-        <h2 style={{ fontSize: '2rem' }}>{t.title}</h2>
-      </div>
+    <motion.section 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="main-content"
+      style={{ padding: '3rem' }}
+    >
+      <header style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ background: 'var(--primary)', padding: '0.75rem', borderRadius: '16px', boxShadow: '0 8px 16px rgba(59, 130, 246, 0.3)' }}>
+          <Newspaper size={32} color="white" />
+        </div>
+        <div>
+          <h2 style={{ fontSize: '2.5rem', letterSpacing: '-0.02em' }}>{t.title}</h2>
+          <p style={{ color: 'var(--text-muted)' }}>Real-time verified civic intelligence</p>
+        </div>
+      </header>
 
-      {loading && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem 0' }}>
-          <Loader2 size={32} className="text-primary" style={{ animation: 'spin 1s linear infinite' }} />
+      {loading && news.length === 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '5rem 0' }}>
+          <Loader2 size={48} className="text-primary" style={{ animation: 'spin 2s linear infinite' }} />
+          <p style={{ color: 'var(--text-muted)', fontWeight: '500' }}>Scanning global frequencies...</p>
         </div>
       )}
 
       {error && (
-        <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'rgb(239, 68, 68)', padding: '1rem', borderRadius: '8px' }}>
+        <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.2)', marginBottom: '2rem' }}>
           {error}
         </div>
       )}
 
-      {!loading && !error && news.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
+        <AnimatePresence>
           {news.map((item, idx) => (
             <motion.a
               href={item.url}
@@ -91,39 +106,42 @@ const LiveNews = ({ language }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
-              style={{ padding: '1.5rem', textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', transition: 'transform 0.3s' }}
+              style={{ padding: '2rem', textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column' }}
             >
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', lineHeight: '1.4' }}>{item.title}</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', flexGrow: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {item.content}
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontSize: '0.9rem', fontWeight: '500' }}>
-                  {t.read} <ExternalLink size={16} />
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                <span style={{ background: 'var(--glass-highlight)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', border: '1px solid var(--glass-border)' }}>
+                  NEWS
+                </span>
                 <button 
                   onClick={(e) => handleSpeak(e, item, idx)}
                   style={{
-                    background: speakingItem === idx ? 'rgba(37, 99, 235, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                    background: speakingItem === idx ? 'var(--primary)' : 'var(--glass-highlight)',
                     border: '1px solid var(--glass-border)',
-                    padding: '0.5rem',
-                    borderRadius: '50%',
-                    color: speakingItem === idx ? 'var(--primary)' : 'var(--text-muted)',
+                    padding: '0.6rem',
+                    borderRadius: '12px',
+                    color: speakingItem === idx ? 'white' : 'var(--text-muted)',
                     cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                   title={speakingItem === idx ? t.stop : t.readAloud}
                 >
-                  {speakingItem === idx ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                  {speakingItem === idx ? <VolumeX size={20} /> : <Volume2 size={20} />}
                 </button>
+              </div>
+
+              <h3 style={{ fontSize: '1.4rem', marginBottom: '1rem', lineHeight: '1.3', fontWeight: '700' }}>{item.title}</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '2rem', flexGrow: 1, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {item.content}
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontSize: '1rem', fontWeight: '600' }}>
+                {t.read} <ExternalLink size={18} />
               </div>
             </motion.a>
           ))}
-        </div>
-      )}
-    </section>
+        </AnimatePresence>
+      </div>
+    </motion.section>
   );
 };
 
