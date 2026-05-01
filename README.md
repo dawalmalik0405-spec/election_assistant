@@ -33,16 +33,35 @@
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Technology Stack & Google Ecosystem Adoption
 
 - **Frontend**: React 18, Vite
 - **Styling**: Vanilla CSS with Premium Glassmorphism
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
-- **AI Engines**: 
-  - **Google Gemini Pro**: Core logic and Search Simulation.
-  - **NVIDIA NIM**: Voice-based assistant responses.
-- **Search API**: Tavily AI Search (with DuckDuckGo-style AI fallback).
+- **Google Services Integration**:
+  - **Google Gemini Pro**: Core intelligence and resilient search simulation.
+  - **Google Cloud Run & Build**: Scalable production hosting and automated CI/CD.
+  - **Firebase Firestore & Analytics**: Real-time civic engagement via the **Community Priority Poll**.
+  - **Google Web Speech API**: Native voice interaction for accessibility.
+
+---
+
+## 🛡️ Resiliency, Security & Accessibility
+
+CivicPath is engineered for 100% dynamic operations and total accessibility:
+- **AI Search Backup**: High-fidelity search simulation ensures zero-downtime news and data.
+- **Enhanced Accessibility**: Full **ARIA role implementation** and screen-reader optimizations for the "Cosmos" UI.
+- **Security Hardening**: Secure environment variable management and input sanitization for all AI interactions.
+
+---
+
+## 🧪 Automated Testing
+
+We maintain a high standard of code quality through automated testing:
+- **Unit Testing**: Powered by **Vitest** and **JSDOM**.
+- **Resiliency Testing**: Automated tests for `searchService` verify that AI fallbacks correctly trigger during API failures (e.g., Error 432).
+- **Execution**: Run `npm test` to verify the system's integrity.
 
 ---
 

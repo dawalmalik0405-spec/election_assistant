@@ -100,7 +100,7 @@ const LiveNews = ({ language }) => {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }} role="feed" aria-busy={loading}>
         <AnimatePresence>
           {news.map((item, idx) => (
             <motion.a
@@ -109,6 +109,7 @@ const LiveNews = ({ language }) => {
               rel="noopener noreferrer"
               key={idx}
               className="glass-card hover-lift"
+              aria-label={`Article: ${item.title}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}

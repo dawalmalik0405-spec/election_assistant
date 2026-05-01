@@ -332,15 +332,20 @@ const VoiceAssistant = ({ language, setLanguage }) => {
         </div>
 
         {/* Input Area */}
-        <div style={{
-          padding: '1.5rem',
-          background: 'var(--bg-secondary)',
-          borderTop: '1px solid var(--glass-border)'
-        }}>
+        <div 
+          style={{
+            padding: '1.5rem',
+            background: 'var(--bg-secondary)',
+            borderTop: '1px solid var(--glass-border)'
+          }}
+          role="form"
+          aria-label="Assistant input form"
+        >
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             {(isSearching || isTyping || isSpeaking) ? (
               <button
                 onClick={stopAi}
+                aria-label="Stop current action"
                 style={{
                   width: '48px',
                   height: '48px',
@@ -361,6 +366,7 @@ const VoiceAssistant = ({ language, setLanguage }) => {
             ) : (
               <button
                 onClick={toggleListening}
+                aria-label={isListening ? "Stop listening" : "Start voice input"}
                 style={{
                   width: '48px',
                   height: '48px',
@@ -387,6 +393,7 @@ const VoiceAssistant = ({ language, setLanguage }) => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                 placeholder={language === 'hi-IN' ? 'सवाल पूछें...' : 'Ask about global elections...'}
+                aria-label="Enter your message"
                 style={{
                   width: '100%',
                   background: 'var(--glass-bg)',
@@ -404,6 +411,7 @@ const VoiceAssistant = ({ language, setLanguage }) => {
               <button
                 onClick={() => handleSend()}
                 disabled={!input.trim()}
+                aria-label="Send message"
                 style={{
                   position: 'absolute',
                   right: '8px',

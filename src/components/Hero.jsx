@@ -12,6 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { fetchDashboardStats, fetchElectionTimeline, fetchLiveHeadlines, getCachedData, setCachedData } from '../services/dashboardService';
 import Assistant from './Assistant';
+import CivicPoll from './CivicPoll';
 
 const Hero = ({ language, theme }) => {
   const navigate = useNavigate();
@@ -304,7 +305,7 @@ const Hero = ({ language, theme }) => {
       {/* Policy Flashcards Section */}
       <div style={{ padding: '2.5rem' }}>
         <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>{t.flashcards}</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
           {policyCards.map((card, i) => (
             <motion.div 
               key={i} 
@@ -318,6 +319,11 @@ const Hero = ({ language, theme }) => {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{card.desc}</p>
             </motion.div>
           ))}
+        </div>
+        
+        {/* Civic Poll - Showcasing Google Services (Firestore) Adoption */}
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <CivicPoll />
         </div>
       </div>
 

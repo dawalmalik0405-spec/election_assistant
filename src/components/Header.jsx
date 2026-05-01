@@ -46,7 +46,7 @@ const Sidebar = ({ language, setLanguage, theme, toggleTheme }) => {
 
   return (
     <aside className="sidebar">
-      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', textDecoration: 'none', color: 'inherit', marginBottom: '3.5rem', padding: '0 0.5rem' }}>
+      <Link to="/" aria-label="Go to Dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', textDecoration: 'none', color: 'inherit', marginBottom: '3.5rem', padding: '0 0.5rem' }}>
         <div style={{ background: 'var(--primary)', padding: '0.6rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)' }}>
           <Vote size={22} color="white" />
         </div>
@@ -55,11 +55,12 @@ const Sidebar = ({ language, setLanguage, theme, toggleTheme }) => {
         </span>
       </Link>
 
-      <nav style={{ flex: 1 }}>
+      <nav style={{ flex: 1 }} aria-label="Main Navigation">
         {navItems.map((item) => (
           <Link 
             key={item.path} 
             to={item.path} 
+            aria-label={item.label}
             className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
           >
             <item.icon size={20} strokeWidth={location.pathname === item.path ? 2.5 : 2} />
@@ -73,6 +74,7 @@ const Sidebar = ({ language, setLanguage, theme, toggleTheme }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <button 
             onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             className="glass-card"
             style={{
               width: '100%',
