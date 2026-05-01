@@ -53,8 +53,8 @@
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/civicpath-election-center.git
-   cd civicpath-election-center
+   git clone https://github.com/dawalmalik0405-spec/election_assistant.git
+   cd election_assistant
    ```
 
 2. Install dependencies:
