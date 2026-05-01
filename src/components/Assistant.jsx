@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import DOMPurify from 'dompurify';
 import { MessageSquare, Send, User, Bot, Mic, MicOff, Volume2, VolumeX, Search, Globe, Loader2, Settings, Key, X, AlertCircle } from 'lucide-react';
 import { performWebSearch } from '../services/searchService';
 import { generateRobustAiResponse } from '../services/aiService';
@@ -148,14 +149,15 @@ const VoiceAssistant = ({ language, setLanguage }) => {
         throw new Error(`AI Model Error: ${aiErr.message}`);
       }
 
+      const sanitizedText = DOMPurify.sanitize(aiResponseText);
       const newMessage = { 
         type: 'bot', 
-        text: aiResponseText, 
+        text: sanitizedText, 
         sources: (searchData.results || []).map(r => r.url.replace('https://', '').split('/')[0]) 
       };
       setMessages(prev => [...prev, newMessage]);
       setIsTyping(false);
-      speak(aiResponseText);
+      speak(sanitizedText);
     } catch (err) {
       if (err.name === 'AbortError') return;
       const displayError = typeof err === 'string' ? err : (err.message || JSON.stringify(err));
@@ -250,14 +252,18 @@ const VoiceAssistant = ({ language, setLanguage }) => {
         </div>
 
         {/* Messages */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '1.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.25rem'
-        }}>
+        <div 
+          role="log"
+          aria-live="polite"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem'
+          }}
+        >
           <AnimatePresence initial={false}>
             {messages.map((msg, idx) => (
               <motion.div

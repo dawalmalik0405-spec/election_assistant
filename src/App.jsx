@@ -46,13 +46,14 @@ function App() {
   return (
     <Router>
       <div className="dashboard-layout">
+        <a href="#main-content" className="skip-link">Skip to main content</a>
         <Sidebar 
           language={language} 
           setLanguage={setLanguage} 
           theme={theme}
           toggleTheme={toggleTheme}
         />
-        <main className="main-content">
+        <main id="main-content" className="main-content">
           <Routes>
             <Route path="/" element={<Hero language={language} theme={theme} />} />
             <Route path="/news" element={<LiveNews language={language} />} />
