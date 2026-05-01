@@ -107,14 +107,21 @@ const VoiceAssistant = ({ language, setLanguage }) => {
     abortControllerRef.current = new AbortController();
     
     try {
-      // Real search using Tavily (with AI backup inside the service)
-      let searchData;
-      try {
-        searchData = await performWebSearch(query, apiKey);
-      } catch (searchErr) {
-        console.warn("Search Tool failed completely. Falling back to AI internal knowledge.");
-        // If search fails, we don't throw! We just provide empty results.
-        searchData = { answer: null, results: [] };
+      // Intelligent Speed Optimization: Detect simple queries to bypass search
+      const simpleKeywords = ['hi', 'hello', 'hey', 'who are you', 'how are you', 'what is your name', 'help', 'thanks', 'thank you'];
+      const isSimpleQuery = query.length < 30 && simpleKeywords.some(k => query.toLowerCase().includes(k));
+      
+      let searchData = { answer: null, results: [] };
+      
+      if (!isSimpleQuery) {
+        // Real search using Tavily (with AI backup inside the service)
+        try {
+          searchData = await performWebSearch(query, apiKey);
+        } catch (searchErr) {
+          console.warn("Search Tool failed completely. Falling back to AI internal knowledge.");
+        }
+      } else {
+        console.log("⚡ Zero-Latency Mode: Bypassing search for simple query.");
       }
       
       setIsSearching(false);
@@ -123,9 +130,9 @@ const VoiceAssistant = ({ language, setLanguage }) => {
       // Prepare context for AI model
       const context = (searchData.results || []).length > 0 
         ? searchData.results.map(r => `Source: ${r.title}\nContent: ${r.content}`).join('\n\n')
-        : "No real-time search data available. Answer based on your internal training data about civic duties and election processes.";
+        : (isSimpleQuery ? "Simple greeting/query. No search needed." : "No real-time search data available. Answer based on internal knowledge.");
       
-      const aiPrompt = `User Query: ${query}\n\nSearch Context:\n${context}\n\nProvide a comprehensive and helpful answer. If search context is provided, prioritize it. If not, use your internal knowledge to assist the user.`;
+      const aiPrompt = `User Query: ${query}\n\nSearch Context:\n${context}\n\nINSTRUCTION: If this is a simple greeting or general question, answer INSTANTLY and briefly. If it's a complex civic query, use the provided context to be thorough. Avoid unnecessary conversational filler.`;
       
       let aiResponseText;
       try {
