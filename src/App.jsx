@@ -1,5 +1,6 @@
 import React from 'react';
-import Header from './components/Header';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Sidebar from './components/Header';
 import Hero from './components/Hero';
 import LiveNews from './components/LiveNews';
 import ValuesMatchmaker from './components/ValuesMatchmaker';
@@ -8,34 +9,36 @@ import Assistant from './components/Assistant';
 
 function App() {
   const [language, setLanguage] = React.useState('en-US');
+  const [theme, setTheme] = React.useState('dark');
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   return (
-    <div className="app-container">
-      <Header language={language} setLanguage={setLanguage} />
-      <main>
-        <Hero language={language} />
-        <LiveNews language={language} />
-        <ValuesMatchmaker language={language} />
-        <Quiz language={language} />
-        <Assistant language={language} setLanguage={setLanguage} />
-      </main>
-      
-      <footer style={{
-        padding: '4rem 2rem',
-        textAlign: 'center',
-        borderTop: '1px solid var(--glass-border)',
-        marginTop: '4rem'
-      }}>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          &copy; 2026 CivicPath Assistant. Empowering voters through information.
-        </p>
-        <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '2rem' }}>
-          <a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.8rem' }}>Privacy Policy</a>
-          <a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.8rem' }}>Terms of Service</a>
-          <a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.8rem' }}>Official Source: Vote.gov</a>
-        </div>
-      </footer>
-    </div>
+    <Router>
+      <div className="dashboard-layout">
+        <Sidebar 
+          language={language} 
+          setLanguage={setLanguage} 
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Hero language={language} theme={theme} />} />
+            <Route path="/news" element={<LiveNews language={language} />} />
+            <Route path="/matchmaker" element={<ValuesMatchmaker language={language} />} />
+            <Route path="/quiz" element={<Quiz language={language} />} />
+            <Route path="/assistant" element={<Assistant language={language} setLanguage={setLanguage} />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
 
